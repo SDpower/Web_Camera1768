@@ -40,10 +40,10 @@ LCD4884 lcd;
 #define MENU_Y	0		// 0-5
 void init_MENU(void) {
 	lcd.LCD_clear();
-	lcd.LCD_write_string(MENU_X, MENU_Y, "CAM TESTING", LCD_HIGHLIGHT);
+	lcd.LCD_write_string(MENU_X, MENU_Y, "Web Camera1768", LCD_HIGHLIGHT);
 }
 
-void setup() {
+void setup_lcd() {
 	lcd.LCD_init();
 	lcd.LCD_clear();
 
@@ -51,6 +51,47 @@ void setup() {
 	init_MENU();
 }
 Camera_LS_Y201 cam1(UART2);
+
+bool init_CAM(void){
+	sleep(1000);
+	lcd.LCD_write_string(MENU_X, MENU_Y + 1, "Camera init...");
+
+	//init cam1
+	bool init_set = false;
+	Camera_LS_Y201::ErrorCode resetCode = cam1.reset();
+	if (resetCode == Camera_LS_Y201::NoError) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset OK");
+		init_set = true;
+	} else if (resetCode == Camera_LS_Y201::SendError) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset f:SendError");
+	} else if (resetCode == Camera_LS_Y201::RecvError) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset f:RecvError");
+	} else if (resetCode == Camera_LS_Y201::UnexpectedReply) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset f:UnexpectedReply");
+	}
+	//Set cam1 ImageSizeto 640x480
+	bool init_ImageSizeto = false;
+	if (cam1.setImageSize(Camera_LS_Y201::ImageSize640_480) == Camera_LS_Y201::NoError) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 3, "ImageSize OK");
+		init_ImageSizeto = true;
+	} else {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 3, "ImageSize fail.");
+	}
+
+	if (init_ImageSizeto && init_set)
+	{
+		init_MENU();
+		lcd.LCD_write_string(MENU_X, MENU_Y + 1, "Ready to GO.");
+		return true;
+	}
+	else
+	{
+		lcd.LCD_write_string(MENU_X, MENU_Y + 4, "Please check Camera..");
+		return false;
+	}
+
+}
+
 
 /* ==============================================
  main task routine
@@ -65,64 +106,10 @@ int main(void) {
 
 	// Simple demo Code (removable)
 	CPin led(LED1);
-	CString str;
-	setup();
+	setup_lcd();
 
-	sleep(1000);
-	lcd.LCD_write_string(MENU_X, MENU_Y + 1, "Camera module");
-
-//	CSerial serial(UART2,4096);
-//	serial.settings(38400);
-//	//int counter = 0;
-//	while(!serial.writeable())
-//	{
-//		sleep(10);
-//		lcd.LCD_write_string(MENU_X, MENU_Y + 3, "wait ready");
-//	}
-//
-//	char  send[4] = {
-//	        0x56,
-//	        0x00,
-//	        0x26,
-//	        0x00
-//	    };
-//	char  recv[4];
-//
-//    if (!serial.write(send,4)) {
-//    	lcd.LCD_write_string(MENU_X, MENU_Y + 3, "send fail");
-//    }else{
-//    	lcd.LCD_write_string(MENU_X, MENU_Y + 3, "send OK");
-//    }
-//    if (!serial.read(recv,4)) {
-//    	lcd.LCD_write_string(MENU_X, MENU_Y + 4, "recv fail");
-//    }else{
-//    	lcd.LCD_write_string(MENU_X, MENU_Y + 4, "recv OK");
-//    	lcd.LCD_write_string(MENU_X, MENU_Y + 5, recv);
-//    	if ((recv[0] == 0x76)
-//    	            && (recv[1] == 0x00)
-//    	            && (recv[2] == 0x26)
-//    	            && (recv[3] == 0x00)) {
-//    		lcd.LCD_write_string(MENU_X, MENU_Y + 4, "init OK wait..");
-//    	}
-//    }
-
-	Camera_LS_Y201::ErrorCode resetCode = cam1.reset();
-    if (resetCode == Camera_LS_Y201::NoError) {
-    	lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset OK");
-	} else if (resetCode == Camera_LS_Y201::SendError) {
-		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset f:SendError");
-	} else if (resetCode == Camera_LS_Y201::RecvError) {
-		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset f:RecvError");
-	} else if (resetCode == Camera_LS_Y201::UnexpectedReply) {
-		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Reset f:UnexpectedReply");
-	}
-
-    if (cam1.setImageSize(Camera_LS_Y201::ImageSize640_480) == Camera_LS_Y201::NoError) {
-    	lcd.LCD_write_string(MENU_X, MENU_Y + 3, "ImageSize OK");
-	} else {
-		lcd.LCD_write_string(MENU_X, MENU_Y + 3, "ImageSize fail.");
-	}
-
+	bool init_Cam = false;
+	init_Cam = init_CAM();
 	// Enter an endless loop
 	while (1) {
 		led = !led;
