@@ -149,6 +149,8 @@ Camera_LS_Y201::ErrorCode Camera_LS_Y201::takePicture() {
     };
     uint8_t recv[5];
 
+    serial.flush();
+    waitIdle();
     if (!sendBytes(send, sizeof(send), 200 * 1000)) {
         return SendError;
     }

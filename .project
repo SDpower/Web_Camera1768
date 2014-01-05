@@ -95,25 +95,5 @@
 			<type>1</type>
 			<locationURI>WORKSPACE_LOC/uCXpresso/extensions/lib/probe/probe.cpp</locationURI>
 		</link>
-		<link>
-			<name>web/jquery</name>
-			<type>2</type>
-			<locationURI>WORKSPACE_LOC/uCXpresso/extensions/web/jquery</locationURI>
-		</link>
-		<link>
-			<name>web/jquery-mobile</name>
-			<type>2</type>
-			<locationURI>WORKSPACE_LOC/uCXpresso/extensions/web/jquery-mobile</locationURI>
-		</link>
-		<link>
-			<name>web/probe.html</name>
-			<type>1</type>
-			<locationURI>WORKSPACE_LOC/uCXpresso/extensions/web/probe.html</locationURI>
-		</link>
-		<link>
-			<name>web/upnp.png</name>
-			<type>1</type>
-			<locationURI>WORKSPACE_LOC/uCXpresso/extensions/web/upnp.png</locationURI>
-		</link>
 	</linkedResources>
 </projectDescription>

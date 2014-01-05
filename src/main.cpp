@@ -19,7 +19,7 @@
 #include "arduino.h"
 #include "class/pin.h"
 #include "probe/probe.h"
-
+#include "class/file.h"
 #include "debug.h"
 
 CDebug dbg(DBG_USB);
@@ -29,10 +29,12 @@ CDebug dbg(DBG_USB);
  ============================================== */
 static uint8_t pool[DEFAULT_POOL_SIZE];
 
+CFile file;
+
 #include "class/serial.h"
 #include "class/string.h"
 #include "lcd/lcd4884.h"
-#include "lib/Camera_LS_Y201.h"
+
 
 LCD4884 lcd;
 
@@ -50,6 +52,8 @@ void setup_lcd() {
 	//menu initialization
 	init_MENU();
 }
+
+#include "lib/Camera_LS_Y201.h"
 Camera_LS_Y201 cam1(UART2);
 
 bool init_CAM(void){
@@ -92,6 +96,64 @@ bool init_CAM(void){
 
 }
 
+/**
+ * Callback function for readJpegFileContent.
+ *
+ * @param buf A pointer to a buffer.
+ * @param siz A size of the buffer.
+ */
+void callback_func(int done, int total, uint8_t *buf, size_t siz) {
+    file.write(buf,siz);
+    static int n = 0;
+    int tmp = done * 100 / total;
+    if (n != tmp) {
+        n = tmp;
+        //DEBMSG("Writing...: %3d%%", n);
+        CString str;
+        str.printf("Writing: %3d%%", n);
+        lcd.LCD_write_string(MENU_X, MENU_Y + 5, str);
+    }
+}
+
+int capture( char *filename) {
+    /*
+     * Take a picture.
+     */
+	Camera_LS_Y201::ErrorCode takeCode = cam1.takePicture();
+    if (takeCode == Camera_LS_Y201::NoError) {
+    	lcd.LCD_write_string(MENU_X, MENU_Y + 2, "takePicture OK");
+    } else if (takeCode == Camera_LS_Y201::SendError) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Take f:SendError");
+		return -1;
+	} else if (takeCode == Camera_LS_Y201::RecvError) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Take f:RecvError");
+		return -1;
+	} else if (takeCode == Camera_LS_Y201::UnexpectedReply) {
+		lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Take f:UnexpectedReply");
+		return -1;
+	}
+    lcd.LCD_write_string(MENU_X, MENU_Y + 2, "Captured.");
+
+    file.path("/webcam1768");
+    if ( file.open(filename,CFile::WRITE) ) {
+    	lcd.LCD_write_string(MENU_X, MENU_Y + 3, "Write Image...");
+    	if (cam1.readJpegFileContent(callback_func) != 0) {
+    		lcd.LCD_write_string(MENU_X, MENU_Y + 4, "readJpegFileContent fail");
+    		file.close();
+    		return -3;
+    	}
+    	file.close();
+    }
+    else
+    {
+    	return -2;
+    }
+
+    cam1.stopTakingPictures();
+
+    return 0;
+}
+
 
 /* ==============================================
  main task routine
@@ -108,8 +170,11 @@ int main(void) {
 	CPin led(LED1);
 	setup_lcd();
 
-	bool init_Cam = false;
-	init_Cam = init_CAM();
+	bool init_Cam = init_CAM();
+	if (init_Cam)
+	{
+		int r = capture("test.jpg");
+	}
 	// Enter an endless loop
 	while (1) {
 		led = !led;
